@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>快速記帳</title>
+  <!-- PWA清單連結 -->
+  <link rel="manifest" href="./manifest.json">
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f5f5f5;
+      margin: 0;
+      padding: 16px;
+      max-width: 420px;
+      margin: 0 auto;
+    }
+    h1 { font-size: 1.4rem; text-align: center; margin-bottom: 20px; }
+    .card {
+      background: white;
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+    label { display: block; margin: 12px 0 4px; font-size: 0.9rem; color: #555; }
+    input, select, textarea {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      font-size: 16px;
+    }
+    .type-btns {
+      display: flex;
+      gap: 10px;
+      margin-top: 8px;
+    }
+    .type-btns button {
+      flex: 1;
+      padding: 14px;
+      border: none;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .income { background: #e6f7e6; color: #2e7d32; }
+    .expense { background: #ffebee; color: #c62828; }
+    .income.active { background: #2e7d32; color: white; }
+    .expense.active { background: #c62828; color: white; }
+    button[type="submit"] {
+      width: 100%;
+      margin-top: 24px;
+      padding: 16px;
+      background: #1976d2;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button[type="submit"]:disabled { background: #90caf9; }
+    .msg {
+      text-align: center;
+      margin-top: 16px;
+      font-weight: 500;
+    }
+    .success { color: #2e7d32; }
+    .error { color: #c62828; }
+  </style>
+</head>
+<body>
+  <h1>快速記帳</h1>
+  <div class="card">
+    <form id="form">
+      <label>類型</label>
+      <div class="type-btns">
+        <button type="button" class="expense active" data-type="支出">支出</button>
+        <button type="button" class="income" data-type="收入">收入</button>
+      </div>
+      <input type="hidden" name="type" id="type" value="支出">
+      <label>金額</label>
+      <input type="number" name="amount" id="amount" inputmode="decimal" step="0.01" required placeholder="0" autofocus>
+      <label>分類</label>
+      <select name="category" id="category">
+        <option value="飲食">飲食</option>
+        <option value="交通">交通</option>
+        <option value="日用品">日用品</option>
+        <option value="娛樂">娛樂</option>
+        <option value="帳單">帳單</option>
+        <option value="薪水">薪水</option>
+        <option value="其他">其他</option>
+      </select>
+      <label>備註（可選）</label>
+      <input type="text" name="note" id="note" placeholder="例如：午餐、Uber...">
+      <label>日期</label>
+      <input type="date" name="date" id="date">
+      <button type="submit" id="submitBtn">記錄</button>
+    </form>
+    <div id="msg" class="msg"></div>
+  </div>
+  <script>
+    document.querySelectorAll('.type-btns button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.type-btns button').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('type').value = btn.dataset.type;
+      });
+    });
+    document.getElementById('date').valueAsDate = new Date();
+
+    const form = document.getElementById('form');
+    const msg = document.getElementById('msg');
+    const submitBtn = document.getElementById('submitBtn');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      submitBtn.disabled = true;
+      msg.textContent = "呼叫MacroDroid...";
+      msg.className = "msg";
+
+      const type = encodeURIComponent(document.getElementById("type").value);
+      const amount = encodeURIComponent(document.getElementById("amount").value);
+      const category = encodeURIComponent(document.getElementById("category").value);
+      const note = encodeURIComponent(document.getElementById("note").value);
+      const date = encodeURIComponent(document.getElementById("date").value);
+
+      const intentUri = `intent:#Intent;action=com.joaomgcd.macrodroid.action.RECORD_LEDGER;S.type=${type};S.amount=${amount};S.category=${category};S.note=${note};S.date=${date};end`;
+
+      try {
+        window.location.href = intentUri;
+        msg.textContent = "已傳送，請確認MacroDroid執行";
+        msg.className = "msg success";
+        form.reset();
+        document.getElementById('date').valueAsDate = new Date();
+        document.querySelector('.expense').classList.add('active');
+        document.querySelector('.income').classList.remove('active');
+        document.getElementById('type').value = "支出";
+        document.getElementById('amount').focus();
+      } catch(err) {
+        msg.textContent = "無法喚起MacroDroid，請檢查已安裝";
+        msg.className = "msg error";
+      } finally {
+        submitBtn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
