@@ -102,50 +102,78 @@
     <div id="msg" class="msg"></div>
   </div>
   <script>
-    document.querySelectorAll('.type-btns button').forEach(btn => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('.type-btns button').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        document.getElementById('type').value = btn.dataset.type;
-      });
+const SCRIPTURL =
+  "https://script.google.com/macros/s/AKfycbxPnmCNwoVoyJ4Cft1SSpyEzacucNjXXGsnGg7dy-CZrz6DotWgTt3JHXmKFL9tWpbt5Q/exec";
+
+const typeButtons = document.querySelectorAll(".type-btns button");
+const typeInput = document.getElementById("type");
+const form = document.getElementById("form");
+const msg = document.getElementById("msg");
+const submitBtn = document.getElementById("submitBtn");
+const dateInput = document.getElementById("date");
+
+function setToday() {
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth() + 1).padStart(2, "0");
+  const dd = String(today.getDate()).padStart(2, "0");
+
+  dateInput.value = `${yyyy}-${mm}-${dd}`;
+}
+
+typeButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    typeButtons.forEach((item) => {
+      item.classList.remove("active");
     });
-    document.getElementById('date').valueAsDate = new Date();
 
-    const form = document.getElementById('form');
-    const msg = document.getElementById('msg');
-    const submitBtn = document.getElementById('submitBtn');
+    button.classList.add("active");
+    typeInput.value = button.dataset.type;
+  });
+});
 
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      submitBtn.disabled = true;
-      msg.textContent = "呼叫MacroDroid...";
-      msg.className = "msg";
+form.addEventListener("submit", async (event) => {
+  event.preventDefault();
 
-      const type = encodeURIComponent(document.getElementById("type").value);
-      const amount = encodeURIComponent(document.getElementById("amount").value);
-      const category = encodeURIComponent(document.getElementById("category").value);
-      const note = encodeURIComponent(document.getElementById("note").value);
-      const date = encodeURIComponent(document.getElementById("date").value);
+  submitBtn.disabled = true;
+  submitBtn.textContent = "記錄中...";
+  msg.textContent = "";
+  msg.className = "msg";
 
-      const intentUri = `intent:#Intent;action=com.joaomgcd.macrodroid.action.RECORD_LEDGER;S.type=${type};S.amount=${amount};S.category=${category};S.note=${note};S.date=${date};end`;
+  const formData = new FormData(form);
 
-      try {
-        window.location.href = intentUri;
-        msg.textContent = "已傳送，請確認MacroDroid執行";
-        msg.className = "msg success";
-        form.reset();
-        document.getElementById('date').valueAsDate = new Date();
-        document.querySelector('.expense').classList.add('active');
-        document.querySelector('.income').classList.remove('active');
-        document.getElementById('type').value = "支出";
-        document.getElementById('amount').focus();
-      } catch(err) {
-        msg.textContent = "無法喚起MacroDroid，請檢查已安裝";
-        msg.className = "msg error";
-      } finally {
-        submitBtn.disabled = false;
-      }
+  try {
+    await fetch(SCRIPTURL, {
+      method: "POST",
+      mode: "no-cors",
+      body: formData
     });
-  </script>
+
+    msg.textContent = "已提交記錄";
+    msg.className = "msg success";
+
+    form.reset();
+
+    typeButtons.forEach((item) => {
+      item.classList.remove("active");
+    });
+
+    document.querySelector(".expense").classList.add("active");
+    typeInput.value = "支出";
+
+    setToday();
+  } catch (error) {
+    console.error("提交失敗：", error);
+
+    msg.textContent = "提交失敗，請檢查網絡或Apps Script設定";
+    msg.className = "msg error";
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = "記錄";
+  }
+});
+
+setToday();
+</script>
 </body>
 </html>
